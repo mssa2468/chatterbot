@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export default function Home() {
   const [messages, setMessages] = useState([
@@ -13,12 +13,20 @@ export default function Home() {
 
   const [theInput, setTheInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(scrollToBottom, [messages]);
+
   const callGetResponse = async () => {
     setIsLoading(true);
     let temp = messages;
     temp.push({ role: "user", content: theInput });
     setTheInput("");
-    console.log("Calling OpenAI...");
+    console.log("Calling Ollama...");
 
     const response = await fetch("/api", {
       method: "POST",
@@ -31,30 +39,30 @@ export default function Home() {
 
     const data = await response.json();
     const { output } = data;
-    console.log("OpenAI replied...", output.content);
+    console.log("Ollama replied...", output.content);
 
     setMessages((prevMessages) => [...prevMessages, output]);
     setIsLoading(false);
-
-    // scrollToRef.current.scrollIntoView()
   };
+
   const Submit = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
       callGetResponse();
     }
   };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between px-24 py-5">
       <h1 className="text-5xl font-sans">ChatterBot</h1>
 
-      <div className="flex  h-[35rem] w-[40rem] flex-col items-center bg-gray-600 rounded-xl">
+      <div className="flex  h-[45rem] w-[50rem] flex-col items-center bg-gray-600 rounded-xl">
         <div className=" h-full flex flex-col gap-2 overflow-y-auto py-8 px-3 w-full">
           {messages.map((e) => {
             return (
               <div
                 key={e.content}
-                className={`w-max max-w-[18rem] rounded-md px-4 py-3 h-min ${
+                className={`w-max max-w-[18rem] rounded-md px-4 py-3 h-min text-lg ${
                   e.role === "assistant"
                     ? "self-start  bg-gray-200 text-gray-800"
                     : "self-end  bg-gray-800 text-gray-50"
@@ -65,15 +73,13 @@ export default function Home() {
             );
           })}
 
-
-
-          {isLoading ? <div className="self-start  bg-gray-200 text-gray-800 w-max max-w-[18rem] rounded-md px-4 py-3 h-min">*loading*</div> : ""}
+          {isLoading ? <div className="self-start  bg-gray-200 text-gray-800 w-max max-w-[18rem] rounded-md px-4 py-3 h-min text-lg">*loading*</div> : ""}
         </div>
         <div className="relative  w-[80%] bottom-4 flex justify-center">
           <textarea
             value={theInput}
             onChange={(event) => setTheInput(event.target.value)}
-            className="w-[85%] h-10 px-3 py-2 resize-none overflow-y-auto text-black bg-gray-300 rouded"
+            className="w-[85%] h-10 px-3 py-2 resize-none overflow-y-auto text-lg text-black bg-gray-300 rouded"
             onKeyDown={Submit}
           />
           <button
@@ -85,7 +91,8 @@ export default function Home() {
         </div>
       </div>
 
-      <div></div>
+      <div ref={messagesEndRef} />
+
     </main>
   );
 }
